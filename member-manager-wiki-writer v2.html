@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Manager Wiki Writer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='2' width='18' height='24' rx='2' fill='none' stroke='%23c8f060' stroke-width='2'/%3E%3Cline x1='8' y1='9' x2='18' y2='9' stroke='%23c8f060' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='%23c8f060' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='8' y1='17' x2='14' y2='17' stroke='%23c8f060' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M20 20 L28 12 L24 8 L16 20 L16 24 L20 24 Z' fill='%23c8f060'/%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --border2: #3a3a3a;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #c8f060;
+    --accent-dim: #a0c040;
+    --accent-bg: rgba(200, 240, 96, 0.08);
+    --danger: #ff6b6b;
+    --radius: 8px;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+
+  .logo span { color: var(--muted); }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid rgba(200,240,96,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  select option { background: #222; }
+
+  .screenshot-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface2);
+    position: relative;
+  }
+
+  .screenshot-zone:hover, .screenshot-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  .screenshot-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .screenshot-zone .zone-icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+    opacity: 0.5;
+  }
+
+  .zone-label { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .screenshot-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .preview-thumb {
+    position: relative;
+    width: 64px;
+    height: 48px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border2);
+  }
+
+  .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .preview-thumb .remove-img {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--danger);
+    border: none;
+    line-height: 1;
+  }
+
+  .context-input { margin-top: 8px; }
+
+  .generate-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .generate-btn:hover { background: var(--accent-dim); }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .generate-btn .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #0f0f0f;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+
+  .generate-btn.loading .spinner { display: block; }
+  .generate-btn.loading .btn-text { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .output-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .output-toolbar {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .output-toolbar .filename {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  .output-toolbar .filename span { color: var(--text); }
+
+  .toolbar-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+
+  .toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toolbar-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+
+  .output-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #markdown-output {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 20px;
+    outline: none;
+    resize: none;
+    width: 100%;
+    min-height: 500px;
+  }
+
+  .preview-content {
+    padding: 24px 32px;
+    max-width: 780px;
+    line-height: 1.8;
+    display: none;
+  }
+
+  .preview-content.visible { display: block; }
+
+  .preview-content h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
+  .preview-content h2 { font-size: 17px; font-weight: 600; margin-top: 28px; margin-bottom: 10px; color: var(--text); }
+  .preview-content h3 { font-size: 14px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--mono); }
+  .preview-content p { margin-bottom: 12px; color: var(--text); font-size: 14px; }
+  .preview-content ul, .preview-content ol { padding-left: 20px; margin-bottom: 12px; }
+  .preview-content li { margin-bottom: 6px; font-size: 14px; }
+  .preview-content code { font-family: var(--mono); font-size: 12px; background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--accent); }
+  .preview-content pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; overflow-x: auto; }
+  .preview-content pre code { background: none; border: none; padding: 0; }
+  .preview-content table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  .preview-content th { text-align: left; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .preview-content td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .preview-content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; background: var(--accent-bg); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+  .preview-content strong { color: var(--text); font-weight: 600; }
+  .preview-content hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--muted);
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 36px; opacity: 0.3; }
+  .empty-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; }
+  .empty-sub { font-size: 12px; max-width: 260px; line-height: 1.6; }
+
+  .copy-success { color: var(--accent) !important; }
+
+  .history-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .history-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    border: 1px solid transparent;
+    transition: all 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
+  }
+
+  .history-item:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .history-item.current { background: var(--accent-bg); color: var(--accent); border-color: rgba(200,240,96,0.2); }
+
+  .error-msg {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255,107,107,0.3);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--danger);
+    margin: 12px 16px 0;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">wiki<span>/</span>writer</div>
+  <div class="tag">Member Manager</div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <label>Article title</label>
+      <input type="text" id="article-title" placeholder="e.g. Processing a Member Refund" />
+    </div>
+
+    <div class="sidebar-section">
+      <label>Screenshots</label>
+      <div class="screenshot-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" multiple />
+        <div class="zone-icon">⊞</div>
+        <div class="zone-label">Drop screenshots here<br>or click to upload</div>
+      </div>
+      <div class="screenshot-previews" id="previews"></div>
+      <div class="context-input">
+        <input type="text" id="screenshot-context" placeholder="What do these screenshots show?" />
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Additional context <span style="color:var(--muted); font-size:10px;">(optional)</span></label>
+      <textarea id="extra-context" placeholder="e.g. This is triggered after a failed ACH payment. The member must be in Active status for this to appear."></textarea>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Article focus</label>
+      <select id="focus-select">
+        <option value="full">Full article (overview + steps + fields)</option>
+        <option value="howto">How-to guide (step-by-step only)</option>
+        <option value="reference">Field reference (definitions table)</option>
+        <option value="troubleshoot">Troubleshooting guide</option>
+        <option value="overview">Module overview / intro</option>
+      </select>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="generate-btn" id="generate-btn" onclick="generateArticle()">
+        <div class="spinner"></div>
+        <span class="btn-text">Generate article →</span>
+      </button>
+      <div id="error-area"></div>
+    </div>
+
+    <div class="sidebar-section" id="history-section" style="display:none;">
+      <label>Article history</label>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </aside>
+
+  <div class="output-pane">
+    <div class="output-toolbar">
+      <div class="filename" id="output-filename"><span>ready</span></div>
+      <button class="toolbar-btn active" id="btn-raw" onclick="switchView('raw')">Markdown</button>
+      <button class="toolbar-btn" id="btn-preview" onclick="switchView('preview')">Preview</button>
+      <button class="toolbar-btn" id="copy-btn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="output-area" id="output-area">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">✦</div>
+        <div class="empty-label">no article yet</div>
+        <div class="empty-sub">Fill in the title, module, upload screenshots, and hit Generate</div>
+      </div>
+      <textarea id="markdown-output" spellcheck="false" style="display:none;"></textarea>
+      <div class="preview-content" id="preview-content"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+const images = [];
+let articleHistory = [];
+let currentView = 'raw';
+
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const previews = document.getElementById('previews');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+
+function handleFiles(files) {
+  files.filter(f => f.type.startsWith('image/')).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const base64 = e.target.result.split(',')[1];
+      const mediaType = file.type;
+      images.push({ base64, mediaType, name: file.name });
+      addThumb(e.target.result, images.length - 1);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function addThumb(src, idx) {
+  const thumb = document.createElement('div');
+  thumb.className = 'preview-thumb';
+  thumb.id = `thumb-${idx}`;
+  thumb.innerHTML = `<img src="${src}"><button class="remove-img" onclick="removeImage(${idx})">✕</button>`;
+  previews.appendChild(thumb);
+}
+
+function removeImage(idx) {
+  images[idx] = null;
+  const el = document.getElementById(`thumb-${idx}`);
+  if (el) el.remove();
+}
+
+function switchView(mode) {
+  currentView = mode;
+  const raw = document.getElementById('markdown-output');
+  const prev = document.getElementById('preview-content');
+  document.getElementById('btn-raw').classList.toggle('active', mode === 'raw');
+  document.getElementById('btn-preview').classList.toggle('active', mode === 'preview');
+  if (mode === 'raw') {
+    raw.style.display = 'block';
+    prev.classList.remove('visible');
+  } else {
+    raw.style.display = 'none';
+    const md = raw.value;
+    prev.innerHTML = marked.parse(md);
+    prev.classList.add('visible');
+  }
+}
+
+function copyOutput() {
+  const text = document.getElementById('markdown-output').value;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copy-success');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copy-success'); }, 1800);
+  });
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+
+function showError(msg) {
+  document.getElementById('error-area').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+}
+
+function setOutput(md, title) {
+  document.getElementById('empty-state').style.display = 'none';
+  const raw = document.getElementById('markdown-output');
+  raw.style.display = 'block';
+  raw.value = md;
+  document.getElementById('output-filename').innerHTML = `<span>${title || 'article'}.md</span>`;
+  if (currentView === 'preview') switchView('preview');
+  articleHistory.push({ title, md });
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+  if (articleHistory.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = articleHistory.map((a, i) =>
+    `<div class="history-item${i===articleHistory.length-1?' current':''}" onclick="loadHistory(${i})">${a.title || 'Untitled'}</div>`
+  ).join('');
+}
+
+function loadHistory(i) {
+  const item = articleHistory[i];
+  document.getElementById('markdown-output').value = item.md;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('markdown-output').style.display = 'block';
+  document.getElementById('output-filename').innerHTML = `<span>${item.title || 'article'}.md</span>`;
+  if (currentView === 'preview') switchView('preview');
+  document.querySelectorAll('.history-item').forEach((el, idx) => el.classList.toggle('current', idx === i));
+}
+
+async function generateArticle() {
+  showError('');
+  const title = document.getElementById('article-title').value.trim();
+  const screenshotCtx = document.getElementById('screenshot-context').value.trim();
+  const extraCtx = document.getElementById('extra-context').value.trim();
+  const focus = document.getElementById('focus-select').value;
+
+  if (!title) { showError('Please enter an article title.'); return; }
+
+  const activeImages = images.filter(Boolean);
+
+  setLoading(true);
+
+  const focusInstructions = {
+    full: 'Write a complete wiki article: overview paragraph, prerequisites (if any), numbered step-by-step instructions, a field reference table (Name | Description | Notes), tips/notes section, and common errors or warnings.',
+    howto: 'Write a concise how-to guide with numbered step-by-step instructions. Include a brief one-sentence overview and any important warnings inline with the relevant steps.',
+    reference: 'Write a field reference article. Include a brief intro paragraph explaining what this screen/feature does, then produce a detailed table with columns: Field Name | Type | Description | Notes/Validation.',
+    troubleshoot: 'Write a troubleshooting guide. Include a brief overview, then structure the article as Problem → Cause → Resolution entries. Add a "When to contact support" section at the end.',
+    overview: 'Write a module overview article. Cover what the module does, who uses it, when to use it, key concepts, and links to related sub-topics (list them as [Article Title] placeholders).'
+  };
+
+  const systemPrompt = `You are a technical writer creating wiki articles for Member Manager, a gym and fitness membership management platform. The audience is gym staff and operators — not developers.
+
+Your articles must be:
+- Extremely detailed and practical
+- Written in plain, professional English (no jargon without explanation)
+- Structured with clear markdown headings (# ## ###)
+- Thorough enough that a new staff member could complete the task without asking for help
+
+Always start the article with a # heading matching the provided title, then a brief summary callout (use > blockquote), then proceed with the article structure.
+
+${focusInstructions[focus]}
+
+If screenshots are provided, describe what each screenshot shows inline within the relevant step or section using the format: *[Screenshot: brief description of what is shown]*. Do not invent UI elements you cannot see — work from what is visible. If no screenshot covers a step, write it based on standard SaaS patterns and mark it with *[Note: verify UI details]*.
+
+Output only the markdown article. No preamble, no explanation, no code fences around the whole article.`;
+
+  const userContent = [];
+
+  if (activeImages.length > 0) {
+    activeImages.forEach((img, i) => {
+      userContent.push({
+        type: 'image',
+        source: { type: 'base64', media_type: img.mediaType, data: img.base64 }
+      });
+    });
+  }
+
+  let userText = `Write a wiki article for the Member Manager platform.
+
+Title: ${title}
+Focus: ${focus}`;
+  if (screenshotCtx) userText += `\nScreenshot context: ${screenshotCtx}`;
+  if (extraCtx) userText += `\nAdditional context: ${extraCtx}`;
+  if (activeImages.length === 0) userText += `\n\n(No screenshots provided — write based on the title and context.)`;
+
+  userContent.push({ type: 'text', text: userText });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const md = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    setOutput(md, title);
+  } catch (err) {
+    showError(err.message || 'Something went wrong. Try again.');
+  } finally {
+    setLoading(false);
+  }
+}
+</script>
+</body>
+</html>
